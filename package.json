@@ -1,0 +1,49 @@
+{
+  "name": "cineblock",
+  "version": "1.1.1",
+  "description": "Smart movie search CLI powered by AI",
+  "author": "CineBlock",
+  "license": "MIT",
+  "homepage": "https://cineblock.in",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peterish8/cineblock-terminal.git"
+  },
+  "bugs": {
+    "url": "https://github.com/peterish8/cineblock-terminal/issues"
+  },
+  "keywords": [
+    "cineblock",
+    "movies",
+    "cli",
+    "terminal",
+    "ai",
+    "gemini",
+    "groq",
+    "openrouter",
+    "sixel",
+    "movie-recommendations"
+  ],
+  "type": "module",
+  "bin": {
+    "cineblock": "index.js"
+  },
+  "files": [
+    "index.js",
+    "lib"
+  ],
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "chalk": "^5.6.2",
+    "conf": "^15.1.0",
+    "figlet": "^1.11.0",
+    "gradient-string": "^3.0.0",
+    "inquirer": "^13.3.2",
+    "openai": "^6.33.0",
+    "ora": "^9.3.0",
+    "sharp": "^0.34.5",
+    "sixel": "^0.16.0",
+    "terminal-image": "^4.2.0",
+    "terminal-link": "^5.0.0"
+  }
+}
