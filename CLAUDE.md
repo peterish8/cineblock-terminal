@@ -1,55 +1,54 @@
-# CineBlock Terminal — Claude project memory
+# CineBlock Terminal: Claude project memory
 
-Last reviewed: 2026-08-22
+Last reviewed: 2026-11-20
+
+@AGENTS.md
 
 ## Purpose
 
-CineBlock Terminal is the standalone Node.js CLI for finding five movie suggestions. It is intentionally separate from CineBlock’s ChatGPT/MCP integration.
+CineBlock Terminal is the `cineblock` npm package: a Node.js CLI that finds five movies, shows the
+user's quota and lists, and opens titles on cineblock.in. It is separate from CineBlock's
+ChatGPT/Claude MCP integration.
 
-- Production website: https://www.cineblock.in
-- Web repository: `C:\Users\nithy\Desktop\1 prats projects\movieX`
-- This folder is the CLI source of truth.
-- Runtime: Node.js ESM (`type: module`), Inquirer prompts, CineBlock/TMDB APIs, optional provider SDKs, and terminal poster rendering.
+- Production website and API: https://www.cineblock.in
+- Web and API repository: `C:\Users\nithy\Desktop\1 prats projects\movieX`
+- Runtime: Node.js 20.12+, ESM, `@inquirer/prompts` (lazy, interactive only), optional
+  `@napi-rs/keyring` for the OS keychain. Everything else is the standard library.
 
 ## Credential boundaries
 
-- `cb_...` is the CLI token. Generate it in CineBlock → Profile → CineBlock Terminal. It is sent to `/api/cli`, is required for terminal searches, and is subject to the 15-search daily quota.
-- `mcp_...` is the separate ChatGPT/MCP credential. It belongs in the MCP connector, never in this CLI.
-- AI provider keys are user-owned and optional. They are needed only for AI natural-language search and are never sent to CineBlock.
-
-Never print, commit, or place any of these credentials in source, documentation, screenshots, or error logs.
+- `cb_...` is the CLI token from CineBlock Profile. Sent only to `/api/cli` and `/api/cli/library`.
+  15 searches per UTC day.
+- `mcp_...` is the separate ChatGPT/Claude MCP credential. Refused by `validateCliToken`.
+- AI provider keys are user-owned, optional, sent only to the provider, never to CineBlock.
+- Storage order: env (`CINEBLOCK_TOKEN`, `CINEBLOCK_AI_KEY`), OS keychain, then a 0600
+  `config.json`. 1.x plain-text config is migrated and deleted on first run.
 
 ## Search contract
 
-The CLI offers two search modes:
+- Guided: the website's three questions, `POST /api/find-movie`, five results, same
+  personalization body as the website when the story signal is "any".
+- AI: provider suggests titles, `GET /api/movies?action=search` verifies them, up to five.
+- One search spends quota once (`POST /api/cli`); rerolls in the same search are free and exclude
+  shown titles. AI calls the provider before spending quota.
 
-1. AI natural-language search: the user describes a movie, the selected Gemini/Groq/OpenRouter provider suggests candidates, and CineBlock verifies the result against poster-backed metadata.
-2. Guided no-AI search: the CLI asks the same three questions as the website finder—story signal, original language, and release era—then calls `POST https://cineblock.in/api/find-movie`. The endpoint returns five server-ranked results without an AI key.
+## Files
 
-Both modes show poster-backed results. A CLI token is validated once per search; rerolling within the same search uses the existing quota grant and excludes already shown results.
+- `bin/cineblock.js`: shebang entry, calls `run()`.
+- `src/cli.js`: argument parsing, app context, error reporting, exit codes. `run()` is injectable.
+- `src/commands.js`: command handlers. `src/interactive.js`: menu and prompts.
+- `src/api.js`: CineBlock HTTP client and error mapping. `src/search.js`: quota and reroll rules.
+- `src/guided.js`: website question catalog. `src/ai.js`: providers. `src/credentials.js`: storage.
+- `src/render.js`: cards and JSON envelopes. `src/term.js`: colour, wrapping, spinner.
+- `src/help.js`: all help text, including `help agents` (with the JSON schema) and `help exit-codes`.
+- `test/`: `node:test` suite, including a fake-terminal test that drives the real prompts.
 
-## Important files
-
-- `index.js` — startup, mode menu, token/key setup, quota flow, rerolls.
-- `lib/ui.js` — prompts, the three guided questions, help, and controls.
-- `lib/cineblock.js` — CLI token API calls.
-- `lib/tmdb.js` — AI verification and the website-compatible guided search call.
-- `lib/ai.js` plus provider files — optional AI provider dispatch.
-- `lib/config.js` — local config storage through `conf`; do not expose stored values.
-- `lib/display.js` — terminal poster/result rendering.
-
-## Local verification
+## Verification
 
 ```text
-npm install
-node --check index.js
-node --check lib/ui.js
-node --check lib/tmdb.js
-node index.js
+npm test
+node bin/cineblock.js --help
+npm pack --dry-run
 ```
 
-Use the project-local Node executable when the global Windows npm launcher is broken. Live search smoke tests must use non-secret inputs and must not print bearer tokens.
-
-## Change discipline
-
-Preserve existing user changes. Keep the CLI and web/MCP contracts separate. Reuse the website’s `/api/find-movie` contract for Guided mode instead of duplicating ranking logic. Keep the result cap at five, retain exact IDs/poster metadata, and report typecheck, syntax, live endpoint, and interactive verification separately.
+Live checks need a valid `cb_` token and spend real searches; say which were run.
